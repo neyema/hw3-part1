@@ -129,17 +129,12 @@ def train(model, X_train, y_train, X_val, y_val,
 
     for e in range(num_epochs):
 
-        # iterate over minibatches
         minibatch_gen = minibatch_generator(X_train, y_train, minibatch_size)
-
-        for X_train_mini, y_train_mini in minibatch_gen:
-            #### Compute outputs ####
-            a_h, a_out = model.forward(X_train_mini)
-
+        for X_train_mini, y_train_mini in minibatch_gen:  # iterate over minibatches
+            a_h, a_out = model.forward(X_train_mini)  # Compute outputs
             #### Compute gradients ####
             d_loss__d_w_out, d_loss__d_b_out, d_loss__d_w_h, d_loss__d_b_h = \
                 model.backward(X_train_mini, a_h, a_out, y_train_mini)
-
             #### Update weights ####
             model.weight_h -= learning_rate * d_loss__d_w_h
             model.bias_h -= learning_rate * d_loss__d_b_h
