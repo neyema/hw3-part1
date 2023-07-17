@@ -2,7 +2,7 @@
 import numpy as np
 from sklearn.base import BaseEstimator
 
-from MLP import compute_loss_and_acc, int_to_onehot, minibatch_generator, sigmoid
+from neuralnet import compute_loss_and_acc, int_to_onehot, minibatch_generator, sigmoid
 
 
 class NeuralNetMLP_2layers(BaseEstimator):

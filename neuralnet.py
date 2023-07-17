@@ -1,4 +1,3 @@
-# MLP with 1 hidden layer
 import numpy as np
 
 
@@ -10,45 +9,21 @@ def int_to_onehot(y, num_labels):
     ary = np.zeros((y.shape[0], num_labels))
     for i, val in enumerate(y):
         ary[i, val] = 1
-
     return ary
-
-
-def compute_loss_and_acc(model, X_test, y_test, num_labels=10, minibatch_size=100):
-    loss, correct_pred, num_examples = 0., 0, 0
-    minibatch_gen = minibatch_generator(X_test, y_test, minibatch_size)
-    for i, (features, targets) in enumerate(minibatch_gen):
-        _, probas = model.forward(features)
-        predicted_labels = np.argmax(probas, axis=1)
-
-        onehot_targets = int_to_onehot(targets, num_labels=num_labels)
-        temp_loss = np.mean((onehot_targets - probas) ** 2)
-        correct_pred += (predicted_labels == targets).sum()
-
-        num_examples += targets.shape[0]
-        loss += temp_loss
-    loss = loss / i
-    acc = correct_pred / num_examples
-    return loss, acc
 
 
 class NeuralNetMLP:
 
     def __init__(self, num_features, num_hidden, num_classes, random_seed=123):
         super().__init__()
-
         self.num_classes = num_classes
-
-        # hidden
         rng = np.random.RandomState(random_seed)
 
-        self.weight_h = rng.normal(
-            loc=0.0, scale=0.1, size=(num_hidden, num_features))
+        self.weight_h = rng.normal(loc=0.0, scale=0.1, size=(num_hidden, num_features))
         self.bias_h = np.zeros(num_hidden)
 
         # output
-        self.weight_out = rng.normal(
-            loc=0.0, scale=0.1, size=(num_classes, num_hidden))
+        self.weight_out = rng.normal(loc=0.0, scale=0.1, size=(num_classes, num_hidden))
         self.bias_out = np.zeros(num_classes)
 
     def forward(self, x):
@@ -123,21 +98,38 @@ class NeuralNetMLP:
 def minibatch_generator(X, y, minibatch_size):
     indices = np.arange(X.shape[0])
     np.random.shuffle(indices)
-
-    for start_idx in range(0, indices.shape[0] - minibatch_size
-                              + 1, minibatch_size):
+    for start_idx in range(0, indices.shape[0] - minibatch_size + 1, minibatch_size):
         batch_idx = indices[start_idx:start_idx + minibatch_size]
-
         yield X[batch_idx], y[batch_idx]
 
 
-def train(model, X_train, y_train, num_epochs=50, minibatch_size=100, learning_rate=0.1):
+def compute_loss_and_acc(nnet, X, y, num_labels=10, minibatch_size=100):
+    loss, correct_pred, num_examples = 0., 0, 0
+    minibatch_gen = minibatch_generator(X, y, minibatch_size)
+
+    for i, (features, targets) in enumerate(minibatch_gen):
+        _, probas = nnet.forward(features)
+        predicted_labels = np.argmax(probas, axis=1)
+        onehot_targets = int_to_onehot(targets, num_labels=num_labels)
+        batch_loss = np.mean((onehot_targets - probas) ** 2)  # TODO: change from mse loss.
+        correct_pred += (predicted_labels == targets).sum()
+        num_examples += targets.shape[0]
+        loss += batch_loss
+
+    loss = loss / i
+    acc = correct_pred / num_examples
+    return loss, acc
+
+
+def train(model, X_train, y_train, X_val, y_val,
+          num_epochs=50, minibatch_size=100, learning_rate=0.1):
     epoch_loss = []
     epoch_train_acc = []
+    epoch_valid_acc = []
 
     for e in range(num_epochs):
 
-        # iterate over mini batches
+        # iterate over minibatches
         minibatch_gen = minibatch_generator(X_train, y_train, minibatch_size)
 
         for X_train_mini, y_train_mini in minibatch_gen:
@@ -156,11 +148,14 @@ def train(model, X_train, y_train, num_epochs=50, minibatch_size=100, learning_r
 
         #### Epoch Logging ####
         train_loss, train_acc = compute_loss_and_acc(model, X_train, y_train)
-        train_acc = train_acc * 100
+        valid_mse, valid_acc = compute_loss_and_acc(model, X_val, y_val)
+        train_acc, valid_acc = train_acc * 100, valid_acc * 100
         epoch_train_acc.append(train_acc)
+        epoch_valid_acc.append(valid_acc)
         epoch_loss.append(train_loss)
         print(f'Epoch: {e + 1:03d}/{num_epochs:03d} '
-              f'| Train loss: {train_loss:.2f} '
-              f'| Train accuracy: {train_acc:.2f}% ')
+              f'| Train Loss: {train_loss:.2f} '
+              f'| Train Acc: {train_acc:.2f}% '
+              f'| Valid Acc: {valid_acc:.2f}%')
 
-    return epoch_loss, epoch_train_acc
+    return epoch_loss, epoch_train_acc, epoch_valid_acc
