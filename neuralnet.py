@@ -1,4 +1,5 @@
 import numpy as np
+from keras.losses import categorical_crossentropy
 
 
 def sigmoid(z):
@@ -111,7 +112,7 @@ def compute_loss_and_acc(nnet, X, y, num_labels=10, minibatch_size=100):
         _, probas = nnet.forward(features)
         predicted_labels = np.argmax(probas, axis=1)
         onehot_targets = int_to_onehot(targets, num_labels=num_labels)
-        batch_loss = np.mean((onehot_targets - probas) ** 2)  # TODO: change from mse loss.
+        batch_loss = categorical_crossentropy(onehot_targets, probas).numpy().mean()
         correct_pred += (predicted_labels == targets).sum()
         num_examples += targets.shape[0]
         loss += batch_loss
