@@ -122,12 +122,14 @@ def compute_loss_and_acc(nnet, X, y, num_labels=10, minibatch_size=100):
     return loss, acc
 
 
-def train(model, X_train, y_train, num_epochs=50, minibatch_size=100, learning_rate=0.1):
-    epoch_loss = []
+def train(model, X_train, y_train, X_test, y_test,
+          num_epochs=50, minibatch_size=100, learning_rate=0.1):
     epoch_train_acc = []
+    epoch_train_loss = []
+    epoch_test_acc = []
+    epoch_test_loss = []
 
     for e in range(num_epochs):
-
         minibatch_gen = minibatch_generator(X_train, y_train, minibatch_size)
         for X_train_mini, y_train_mini in minibatch_gen:  # iterate over mini-batches
             a_h, a_out = model.forward(X_train_mini)  # Compute outputs
@@ -142,11 +144,15 @@ def train(model, X_train, y_train, num_epochs=50, minibatch_size=100, learning_r
 
         #### Epoch Logging ####
         train_loss, train_acc = compute_loss_and_acc(model, X_train, y_train)
-        train_acc = train_acc * 100
-        epoch_train_acc.append(train_acc)
-        epoch_loss.append(train_loss)
-        print(f'Epoch: {e + 1:03d}/{num_epochs:03d} '
-              f'| Train Loss: {train_loss:.2f} '
-              f'| Train Acc: {train_acc:.2f}% ')
+        test_loss, test_acc = compute_loss_and_acc(model, X_test, y_test)
+        train_acc, test_acc = train_acc * 100, test_acc * 100
 
-    return epoch_loss, epoch_train_acc
+        epoch_train_acc.append(train_acc)
+        epoch_test_acc.append(test_acc)
+        epoch_train_loss.append(train_loss)
+        epoch_test_loss.append(test_loss)
+        print(f'Epoch: {e + 1:03d}/{num_epochs:03d} '
+              f'| Train Loss: {train_loss:.2f} | Train Acc: {train_acc:.2f}% ',
+              f'| Test Loss: {test_loss:.2f} | Test Acc: {test_acc:.2f}% ')
+
+    return epoch_train_acc, epoch_train_loss, epoch_test_acc, epoch_test_loss

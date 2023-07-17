@@ -27,6 +27,7 @@ class NeuralNetMLP_2layers(BaseEstimator):
         self.weight_out = rng.normal(loc=0.0, scale=0.1, size=(num_classes, num_hidden2))
         self.bias_out = np.zeros(num_classes)
         self.epoch_train_acc, self.epoch_train_loss = [], []
+        self.epoch_test_acc, self.epoch_test_loss = [], []
 
     def forward(self, x):
         z_h1 = np.dot(x, self.weight_h1.T) + self.bias_h1
@@ -97,21 +98,24 @@ class NeuralNetMLP_2layers(BaseEstimator):
         self.weight_out -= learning_rate * d_loss__d_w_out
         self.bias_out -= learning_rate * d_loss__d_b_out
 
-    def epoch_log(self, X_train, y_train, epoch, num_epochs):
+    def epoch_log(self, X_train, y_train, X_test, y_test, epoch, num_epochs):
         train_loss, train_acc = compute_loss_and_acc(self, X_train, y_train)
-        train_acc = train_acc * 100
+        test_loss, test_acc = compute_loss_and_acc(self, X_test, y_test)
+        train_acc, test_acc = train_acc * 100, test_acc * 100
         self.epoch_train_acc.append(train_acc)
         self.epoch_train_loss.append(train_loss)
+        self.epoch_test_acc.append(test_acc)
+        self.epoch_test_loss.append(test_loss)
         print(f'Epoch: {epoch + 1:03d}/{num_epochs:03d} '
-              f'| Train loss: {train_loss:.2f} '
-              f'| Train accuracy: {train_acc:.2f}% ')
+              f'| Train loss: {train_loss:.2f} | Train accuracy: {train_acc:.2f}% ',
+              f'| Test loss: {test_loss:.2f} | Test accuracy: {test_acc:.2f}%')
 
-    def fit(self, X, y, num_epochs=50, minibatch_size=100, learning_rate=0.1):
+    def fit(self, X, y, X_test, y_test, num_epochs=50, minibatch_size=100, learning_rate=0.1):
         for epoch in range(num_epochs):
             minibatch_gen = minibatch_generator(X, y, minibatch_size)
             for X_train_mini, y_train_mini in minibatch_gen:  # iterate over mini batches
                 (a_h1, a_h2), a_out = self.forward(X_train_mini)  # outputs
                 self.update_weights(X_train_mini, y_train_mini, a_h1, a_h2, a_out, learning_rate)
-            self.epoch_log(X, y, epoch, num_epochs)
+            self.epoch_log(X, y, X_test, y_test, epoch, num_epochs)
         self.is_fitted_ = True
         return self
